@@ -102,12 +102,14 @@ void L2_DxfAdapter::addArc(const DL_ArcData &data)
     PRINT_FUNC;
     QString layer = QString::fromStdString(this->attributes.getLayer());
     QString device = QString("C,%1*").arg(DEFAULT_THICKNESS);
-    double rel_x = data.radius * qCos(data.angle1);
-    double rel_y = data.radius * qSin(data.angle1);
+    double start_angle = data.angle1 / 180 * M_PI;
+    double end_angle = data.angle2 / 180 * M_PI;
+    double rel_x = data.radius * qCos(start_angle);
+    double rel_y = data.radius * qSin(start_angle);
     double start_x = data.cx + rel_x;
     double start_y = data.cy + rel_y;
-    double end_x = data.cx + data.radius * qCos(data.angle2);
-    double end_y = data.cy + data.radius * qSin(data.angle2);
+    double end_x = data.cx + data.radius * qCos(end_angle);
+    double end_y = data.cy + data.radius * qSin(end_angle);
     QVariantList objects;
     objects.push_back(QVariantMap{
                           { "layer", layer },
@@ -128,8 +130,8 @@ void L2_DxfAdapter::addArc(const DL_ArcData &data)
                           { "x", end_x },
                           { "y", end_y },
                           { "style", "D01" },
-                          { "i", rel_x },
-                          { "j", rel_y }
+                          { "i", -rel_x },
+                          { "j", -rel_y }
                       });
     objects.push_back(QVariantMap{
                           { "layer", layer },
