@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         qInfo() << finfo.absoluteFilePath() << finfo.absoluteDir().absolutePath();
         bool ok = L2_Dxf2Gerber::run(finfo.absoluteFilePath(), finfo.absoluteDir().absolutePath(), &err);
         if (!ok) {
-            qFatal("Convert failed. Error: ", err);
+            qFatal("Convert failed. Error: ", err.toLatin1().constData());
             return 1;
         }
     }
