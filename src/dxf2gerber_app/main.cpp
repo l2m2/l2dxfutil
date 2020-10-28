@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     QString err;
-    bool ok = L2_Dxf2Gerber::run("E:/demo.dxf", "E:/", &err);
+    bool ok = L2_Dxf2Gerber::run("E:/01.dxf", "E:/", &err);
     if (!ok) {
         qDebug() << "Error: " << err;
         qApp->quit();

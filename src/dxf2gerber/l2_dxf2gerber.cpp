@@ -2,6 +2,7 @@
 #include <QFile>
 #include <QDir>
 #include <QTextStream>
+#include <QScopedPointer>
 #include "../dxflib/dl_dxf.h"
 #include "l2_dxfadapter.h"
 
@@ -11,9 +12,9 @@ bool L2_Dxf2Gerber::run(const QString &dxfPath, const QString &gerberDir, QStrin
         *err = "DXF file does not exist.";
         return false;
     }
-    DL_Dxf *dxf = new DL_Dxf();
-    L2_DxfAdapter *adapter = new L2_DxfAdapter();
-    bool ok = dxf->in(dxfPath.toStdString(), adapter);
+    QScopedPointer<DL_Dxf> dxf(new DL_Dxf());
+    QScopedPointer<L2_DxfAdapter> adapter(new L2_DxfAdapter());
+    bool ok = dxf->in(dxfPath.toStdString(), adapter.data());
     if (ok) {
         QDir dir(gerberDir);
         if (!dir.exists()) {
