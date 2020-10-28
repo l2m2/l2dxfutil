@@ -1,7 +1,7 @@
 TEMPLATE = subdirs
 
 SUBDIRS += \
-    dxf2odb \
-    dxf2odb_app
+    dxf2gerber \
+    dxf2gerber_app
 
 CONFIG += ordered

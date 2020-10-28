@@ -1,14 +1,18 @@
-#ifndef L2_CREATIONADAPTER_H
-#define L2_CREATIONADAPTER_H
+#ifndef L2_DXFADAPTER_H
+#define L2_DXFADAPTER_H
 
+#include <QList>
+#include <QMap>
+#include <QVariant>
 #include "../dxflib/dl_creationadapter.h"
 
-class L2_CreationAdapter : public DL_CreationAdapter
+class L2_DxfAdapter : public DL_CreationAdapter
 {
 public:
-    L2_CreationAdapter();
-    ~L2_CreationAdapter();
-
+    L2_DxfAdapter();
+    ~L2_DxfAdapter();
+    QMap<QString, QVariantList> getLayers() const;
+protected:
     void processCodeValuePair(unsigned int, const std::string&) override;
     void endSection() override;
     void addLayer(const DL_LayerData&) override;
@@ -18,15 +22,15 @@ public:
     void endBlock() override;
     void addTextStyle(const DL_StyleData&) override;
     void addPoint(const DL_PointData&) override;
-    void addLine(const DL_LineData&) override;
+    void addLine(const DL_LineData&data) override;
     void addXLine(const DL_XLineData&) override;
     void addRay(const DL_RayData&) override;
 
-    void addArc(const DL_ArcData&) override;
-    void addCircle(const DL_CircleData&) override;
-    void addEllipse(const DL_EllipseData&) override;
+    void addArc(const DL_ArcData&data) override;
+    void addCircle(const DL_CircleData&data) override;
+    void addEllipse(const DL_EllipseData&data) override;
 
-    void addPolyline(const DL_PolylineData&) override;
+    void addPolyline(const DL_PolylineData&data) override;
     void addVertex(const DL_VertexData&) override;
 
     void addSpline(const DL_SplineData&) override;
@@ -85,6 +89,10 @@ public:
     void setVariableString(const std::string&, const std::string&, int) override;
     void setVariableInt(const std::string&, int, int) override;
     void setVariableDouble(const std::string&, double, int) override;
+private:
+    void process(const QVariantList &objects, bool append);
+private:
+    QMap<QString, QVariantList> layers;
 };
 
-#endif // L2_CREATIONADAPTER_H
+#endif // L2_DXFADAPTER_H
