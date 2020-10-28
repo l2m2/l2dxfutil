@@ -26,16 +26,6 @@ QMap<QString, QVariantList> L2_DxfAdapter::getLayers() const
     return this->layers;
 }
 
-void L2_DxfAdapter::processCodeValuePair(unsigned int, const std::string &)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::endSection()
-{
-//    PRINT_FUNC;
-}
-
 void L2_DxfAdapter::addLayer(const DL_LayerData &)
 {
     PRINT_FUNC;
@@ -51,19 +41,18 @@ void L2_DxfAdapter::addLinetypeDash(double)
     PRINT_FUNC;
 }
 
-void L2_DxfAdapter::addBlock(const DL_BlockData &)
+void L2_DxfAdapter::addBlock(const DL_BlockData &data)
 {
     PRINT_FUNC;
+    this->current_block = QString::fromStdString(data.name);
 }
 
 void L2_DxfAdapter::endBlock()
 {
     PRINT_FUNC;
-}
-
-void L2_DxfAdapter::addTextStyle(const DL_StyleData &)
-{
-//    PRINT_FUNC;
+    this->blocks.insert(this->current_block, this->current_block_objects);
+    this->current_block_objects.clear();
+    this->current_block.clear();
 }
 
 void L2_DxfAdapter::addPoint(const DL_PointData &)
@@ -91,7 +80,11 @@ void L2_DxfAdapter::addLine(const DL_LineData &data)
                           { "y", data.y2 },
                           { "style", "D01" }
                       });
-    process(objects, true);
+    if (!this->current_block.isEmpty()) {
+        this->current_block_objects.append(objects);
+    } else {
+        process(objects, true);
+    }
 }
 
 void L2_DxfAdapter::addXLine(const DL_XLineData &)
@@ -142,7 +135,12 @@ void L2_DxfAdapter::addArc(const DL_ArcData &data)
                           { "layer", layer },
                           { "command", "G01*" }
                       });
-    process(objects, true);
+
+    if (!this->current_block.isEmpty()) {
+        this->current_block_objects.append(objects);
+    } else {
+        process(objects, true);
+    }
 }
 
 void L2_DxfAdapter::addCircle(const DL_CircleData &data)
@@ -163,7 +161,11 @@ void L2_DxfAdapter::addCircle(const DL_CircleData &data)
                           { "y", data.cy },
                           { "style", "D03" }
                       });
-    process(objects, true);
+    if (!this->current_block.isEmpty()) {
+        this->current_block_objects.append(objects);
+    } else {
+        process(objects, true);
+    }
 }
 
 void L2_DxfAdapter::addEllipse(const DL_EllipseData &data)
@@ -209,7 +211,11 @@ void L2_DxfAdapter::addEllipse(const DL_EllipseData &data)
                               { "command", "G37*" }
                           });
     }
-    process(objects, true);
+    if (!this->current_block.isEmpty()) {
+        this->current_block_objects.append(objects);
+    } else {
+        process(objects, true);
+    }
 }
 
 void L2_DxfAdapter::addPolyline(const DL_PolylineData &data)
@@ -242,9 +248,42 @@ void L2_DxfAdapter::addKnot(const DL_KnotData &)
     PRINT_FUNC;
 }
 
-void L2_DxfAdapter::addInsert(const DL_InsertData &)
+void L2_DxfAdapter::addInsert(const DL_InsertData &data)
 {
     PRINT_FUNC;
+    QString block = QString::fromStdString(data.name);
+    QString layer = QString::fromStdString(this->attributes.getLayer());
+    double rotation = data.angle / 180 * M_PI;
+    bool switch_ccw = (data.sx * data.sy < 0);
+
+    QVariantList objects;
+    for (auto obj : this->blocks.value(block)) {
+        QVariantMap objMap = obj.toMap();
+        if (objMap.contains("x")) {
+            double x = data.sx * objMap.value("x").toDouble();
+            double y = data.sy * objMap.value("y").toDouble();
+            objMap["x"] = x * qCos(rotation) - y * qSin(rotation) + data.ipx;
+            objMap["y"] = x * qSin(rotation) + y * qCos(rotation) + data.ipy;
+        }
+        if (objMap.contains("i")) {
+            double i = data.sx * objMap.value("i").toDouble();
+            double j = data.sy * objMap.value("j").toDouble();
+            objMap["i"] = i * qCos(rotation) - j * qSin(rotation);
+            objMap["j"] = i * qSin(rotation) + j * qCos(rotation);
+        }
+        if (!block.startsWith('*')) {
+            objMap.insert("layer", layer);
+        }
+        if (switch_ccw && objMap.contains("mode")) {
+            if (objMap.value("mode").toString() == "G03") {
+                objMap["mode"] = "G02";
+            } else if (objMap.value("mode").toString() == "G02") {
+                objMap["mode"] = "G03";
+            }
+        }
+        objects.push_back(objMap);
+    }
+    process(objects, true);
 }
 
 void L2_DxfAdapter::addMText(const DL_MTextData &)
@@ -400,46 +439,6 @@ void L2_DxfAdapter::addXDataReal(int, double)
 void L2_DxfAdapter::addXDataInt(int, int)
 {
     PRINT_FUNC;
-}
-
-void L2_DxfAdapter::addDictionary(const DL_DictionaryData &)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::addDictionaryEntry(const DL_DictionaryEntryData &)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::endEntity()
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::addComment(const std::string &)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::setVariableVector(const std::string &, double, double, double, int)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::setVariableString(const std::string &, const std::string &, int)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::setVariableInt(const std::string &, int, int)
-{
-//    PRINT_FUNC;
-}
-
-void L2_DxfAdapter::setVariableDouble(const std::string &, double, int)
-{
-    //    PRINT_FUNC;
 }
 
 void L2_DxfAdapter::process(const QVariantList &objects, bool append)

@@ -13,14 +13,11 @@ public:
     ~L2_DxfAdapter();
     QMap<QString, QVariantList> getLayers() const;
 protected:
-    void processCodeValuePair(unsigned int, const std::string&) override;
-    void endSection() override;
     void addLayer(const DL_LayerData&) override;
     void addLinetype(const DL_LinetypeData&) override;
     void addLinetypeDash(double) override;
-    void addBlock(const DL_BlockData&) override;
+    void addBlock(const DL_BlockData&data) override;
     void endBlock() override;
-    void addTextStyle(const DL_StyleData&) override;
     void addPoint(const DL_PointData&) override;
     void addLine(const DL_LineData&data) override;
     void addXLine(const DL_XLineData&) override;
@@ -38,7 +35,7 @@ protected:
     void addFitPoint(const DL_FitPointData&) override;
     void addKnot(const DL_KnotData&) override;
 
-    void addInsert(const DL_InsertData&) override;
+    void addInsert(const DL_InsertData&data) override;
 
     void addMText(const DL_MTextData&) override;
     void addMTextChunk(const std::string&) override;
@@ -77,22 +74,13 @@ protected:
     void addXDataString(int, const std::string&) override;
     void addXDataReal(int, double) override;
     void addXDataInt(int, int) override;
-
-    void addDictionary(const DL_DictionaryData&) override;
-    void addDictionaryEntry(const DL_DictionaryEntryData&) override;
-
-    void endEntity() override;
-
-    void addComment(const std::string&) override;
-
-    void setVariableVector(const std::string&,  double, double, double, int) override;
-    void setVariableString(const std::string&, const std::string&, int) override;
-    void setVariableInt(const std::string&, int, int) override;
-    void setVariableDouble(const std::string&, double, int) override;
 private:
     void process(const QVariantList &objects, bool append);
 private:
     QMap<QString, QVariantList> layers;
+    QMap<QString, QVariantList> blocks;
+    QString current_block;
+    QVariantList current_block_objects;
 };
 
 #endif // L2_DXFADAPTER_H
