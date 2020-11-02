@@ -3,6 +3,7 @@
 
 #include <QList>
 #include <QMap>
+#include <QVector>
 #include <QVariant>
 #include "../dxflib/dl_creationadapter.h"
 
@@ -28,7 +29,7 @@ protected:
     void addEllipse(const DL_EllipseData&data) override;
 
     void addPolyline(const DL_PolylineData&data) override;
-    void addVertex(const DL_VertexData&) override;
+    void addVertex(const DL_VertexData&data) override;
 
     void addSpline(const DL_SplineData&) override;
     void addControlPoint(const DL_ControlPointData&) override;
@@ -81,6 +82,8 @@ private:
     QMap<QString, QVariantList> blocks;
     QString current_block;
     QVariantList current_block_objects;
+    DL_PolylineData current_polyline{0, 0, 0, 0};
+    QVector<DL_VertexData> current_polyline_vertexs;
 };
 
 #endif // L2_DXFADAPTER_H

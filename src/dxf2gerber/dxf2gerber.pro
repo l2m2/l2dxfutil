@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       -= gui
+QT       += gui
 
 TARGET = $$qtLibraryTarget(l2_dxf2gerber)
 TEMPLATE = lib
