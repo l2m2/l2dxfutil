@@ -18,7 +18,7 @@ int main(int argc, char *argv[])
         QFileInfo finfo(dxf_path);
         QString err;
         qInfo() << finfo.absoluteFilePath() << finfo.absoluteDir().absolutePath();
-        bool ok = L2_Dxf2Gerber::run(finfo.absoluteFilePath(), finfo.absoluteDir().absolutePath(), &err);
+        bool ok = L2_Dxf2Gerber::toDir(finfo.absoluteFilePath(), finfo.absoluteDir().absolutePath(), &err);
         if (!ok) {
             qFatal("Convert failed. Error: %s", err.toLatin1().constData());
             return 1;

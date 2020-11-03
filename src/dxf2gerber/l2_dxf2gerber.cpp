@@ -3,10 +3,11 @@
 #include <QDir>
 #include <QTextStream>
 #include <QScopedPointer>
+#include <QUuid>
 #include "../dxflib/dl_dxf.h"
 #include "l2_dxfadapter.h"
 
-bool L2_Dxf2Gerber::run(const QString &dxfPath, const QString &gerberDir, QString *err)
+bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QString *err)
 {
     if (!QFile::exists(dxfPath)) {
         *err = "DXF file does not exist.";
@@ -91,6 +92,28 @@ bool L2_Dxf2Gerber::run(const QString &dxfPath, const QString &gerberDir, QStrin
             out << "M02*\n";
             file.close();
         }
+    }
+    return ok;
+}
+
+bool L2_Dxf2Gerber::toString(const QString &dxfPath, QString *gerberStr, QString *err)
+{
+    QString gerberDir =  QDir::tempPath() + QDir::separator() + QUuid::createUuid().toString();
+    bool ok = toDir(dxfPath, gerberDir, err);
+    if (ok) {
+        QDir dir(gerberDir);
+        auto fileinfos = dir.entryInfoList(QStringList{ "*.gbr" }, QDir::Files);
+        if (fileinfos.isEmpty()) {
+            ok = false;
+        } else {
+            auto gbrFilePath = fileinfos.first().absoluteFilePath();
+            QFile file(gbrFilePath);
+            if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                *gerberStr = file.readAll();
+            }
+            file.close();
+        }
+        dir.removeRecursively();
     }
     return ok;
 }
