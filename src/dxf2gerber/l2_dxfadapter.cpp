@@ -237,230 +237,6 @@ void L2_DxfAdapter::addVertex(const DL_VertexData &data)
 {
     PRINT_FUNC;
     this->current_polyline_vertexs.push_back(data);
-    if (this->current_polyline_vertexs.size() == this->current_polyline.number) {
-        // analyze
-        QString layer = QString::fromStdString(this->attributes.getLayer());
-        bool closed = (this->current_polyline.flags == 1);
-        QVariantList objects;
-        for (int index = 0; index < this->current_polyline_vertexs.size() - !closed; index++) {
-            DL_VertexData start_vertex = this->current_polyline_vertexs.at(index);
-            DL_VertexData end_vertex = this->current_polyline_vertexs.at((index + 1) % this->current_polyline_vertexs.size());
-            double start_bulge = start_vertex.bulge;
-            double start_width = 0.0;
-            double end_width = 0.0;
-            QVector2D start { static_cast<float>(start_vertex.x), static_cast<float>(start_vertex.y) };
-            QVector2D end { static_cast<float>(end_vertex.x), static_cast<float>(end_vertex.y) };
-            QString device = QString("C,%1*").arg(DEFAULT_THICKNESS);
-            bool contours = (start_width != 0 || end_width != 0);
-            QVector2D ortholine = perpendicular(end - start);
-            float ortholine_l = ortholine.length();
-
-            QVector2D start1, start2, end1, end2;
-            if (start_bulge) {
-                double opening_angle = qAtan(start_bulge) * 4;
-                QVector2D rel_start = (end - start) / 2 - ortholine / ( 2 * qTan(opening_angle / 2) );
-                QVector2D rel_end = start - end + rel_start;
-                float radius = rel_start.length();
-                start1 = start - rel_start * 0.5 * start_width / radius;
-                start2 = start + rel_start * 0.5 * start_width / radius;
-                end1 = end - rel_end * 0.5 * end_width / radius;
-                end2 = end + rel_end * 0.5 * end_width / radius;
-            } else if (ortholine_l) {
-                start1 = start - ortholine * 0.5 * start_width / ortholine_l;
-                start2 = start + ortholine * 0.5 * start_width / ortholine_l;
-                end1 = end - ortholine * 0.5 * end_width / ortholine_l;
-                end2 = end + ortholine * 0.5 * end_width / ortholine_l;
-            } else {
-                start1 = start;
-                start2 = start;
-                end1 = end;
-                end2 = end;
-            }
-            if (start_bulge) {
-                double opening_angle = qAtan(start_bulge) * 4;
-                QString mode = start_bulge > 0 ? "G03" : "G02";
-                QString inv_mode = start_bulge > 0 ? "G02" : "G03";
-                objects.append(QVariantMap{
-                                   { "layer", layer },
-                                   { "command", "G75*" }
-                               });
-                if (contours) {
-                    auto ortho1 = perpendicular(end1 - start1);
-                    auto ortho2 = perpendicular(end2 - start2);
-                    auto cycle1 = -(end1 - start1) / 2 - ortho1 / ( 2 * qTan(opening_angle / 2) );
-                    auto cycle2 = (end2 - start2) / 2 - ortho2 / ( 2 * qTan(opening_angle / 2) );
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "command", "G36*" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "mode", "G01" },
-                                       { "x", start1.x() },
-                                       { "y", start1.y() },
-                                       { "style", "D02" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "mode", "G01" },
-                                       { "x", start2.x() },
-                                       { "y", start2.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "mode", mode },
-                                       { "x", end2.x() },
-                                       { "y", end2.y() },
-                                       { "i", cycle2.x() },
-                                       { "j", cycle2.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "mode", "G01" },
-                                       { "x", end1.x() },
-                                       { "y", end1.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "mode", inv_mode },
-                                       { "x", start1.x() },
-                                       { "y", start1.y() },
-                                       { "i", cycle1.x() },
-                                       { "j", cycle1.y() },
-                                       { "style", "D01" }
-                                   });
-                } else {
-                    auto rel = - (start - end) / 2 - ortholine / ( 2 * qTan(opening_angle / 2) );
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", device },
-                                       { "mode", "G01" },
-                                       { "x", start.x() },
-                                       { "y", start.y() },
-                                       { "style", "D02" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", device },
-                                       { "mode", mode },
-                                       { "x", end.x() },
-                                       { "y", end.y() },
-                                       { "i", rel.x() },
-                                       { "j", rel.y() },
-                                       { "style", "D01" }
-                                   });
-                }
-                objects.append(QVariantMap{
-                                   { "layer", layer },
-                                   { "command", "G01*" }
-                               });
-            } else if (ortholine_l > 0) {
-                if (contours) {
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "command", "G36*" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "x", start1.x() },
-                                       { "y", start1.y() },
-                                       { "style", "D02" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "x", start2.x() },
-                                       { "y", start2.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "x", end2.x() },
-                                       { "y", end2.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "x", end1.x() },
-                                       { "y", end1.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", "C,0.001*" },
-                                       { "x", start1.x() },
-                                       { "y", start1.y() },
-                                       { "style", "D01" }
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "command", "G37*" }
-                                   });
-                } else {
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", device },
-                                       { "x", start.x() },
-                                       { "y", start.y() },
-                                       { "style", "D02" },
-                                   });
-                    objects.append(QVariantMap{
-                                       { "layer", layer },
-                                       { "device", device },
-                                       { "x", end.x() },
-                                       { "y", end.y() },
-                                       { "style", "D01" },
-                                   });
-                }
-            }
-        }
-
-        // try really closed poly and remove doubled lines
-        if (AUTOFILL && closed) {
-            for (QVariantList::iterator it = objects.begin(); it != objects.end(); ) {
-                QString command = it->toMap().value("command").toString();
-                if (command == "G36*" || command == "G37*") {
-                    it = objects.erase(it);
-                } else {
-                    it++;
-                }
-            }
-            bool first = true;
-            for (auto & o : objects) {
-                QVariantMap oMap = o.toMap();
-                if (oMap.contains("style")) {
-                    oMap.insert("style", first ? "D02" : "D01");
-                    first = false;
-                }
-                o = oMap;
-            }
-            objects.prepend(QVariantMap{
-                                { "layer", layer },
-                                { "command", "G36*" }
-                            });
-            objects.append(QVariantMap{
-                               { "layer", layer },
-                               { "command", "G37*" }
-                           });
-        }
-
-        if (!this->current_block.isEmpty()) {
-            this->current_block_objects.append(objects);
-        } else {
-            process(objects, true);
-        }
-    }
 }
 
 void L2_DxfAdapter::addSpline(const DL_SplineData &)
@@ -676,6 +452,13 @@ void L2_DxfAdapter::addXDataInt(int, int)
     PRINT_FUNC;
 }
 
+void L2_DxfAdapter::endEntity()
+{
+    if (!this->current_polyline_vertexs.isEmpty()) {
+        analyzePolyline();
+    }
+}
+
 void L2_DxfAdapter::process(const QVariantList &objects, bool append)
 {
     for (int i = 0; i < objects.size(); i++) {
@@ -692,5 +475,231 @@ void L2_DxfAdapter::process(const QVariantList &objects, bool append)
             objs.insert(i, oMap);
             this->layers[layer] = objs;
         }
+    }
+}
+
+void L2_DxfAdapter::analyzePolyline()
+{
+    // analyze
+    QString layer = QString::fromStdString(this->attributes.getLayer());
+    bool closed = (this->current_polyline.flags == 1);
+    QVariantList objects;
+    for (int index = 0; index < this->current_polyline_vertexs.size() - !closed; index++) {
+        DL_VertexData start_vertex = this->current_polyline_vertexs.at(index);
+        DL_VertexData end_vertex = this->current_polyline_vertexs.at((index + 1) % this->current_polyline_vertexs.size());
+        double start_bulge = start_vertex.bulge;
+        double start_width = 0.0;
+        double end_width = 0.0;
+        QVector2D start { static_cast<float>(start_vertex.x), static_cast<float>(start_vertex.y) };
+        QVector2D end { static_cast<float>(end_vertex.x), static_cast<float>(end_vertex.y) };
+        QString device = QString("C,%1*").arg(DEFAULT_THICKNESS);
+        bool contours = (start_width != 0 || end_width != 0);
+        QVector2D ortholine = perpendicular(end - start);
+        float ortholine_l = ortholine.length();
+
+        QVector2D start1, start2, end1, end2;
+        if (start_bulge) {
+            double opening_angle = qAtan(start_bulge) * 4;
+            QVector2D rel_start = (end - start) / 2 - ortholine / ( 2 * qTan(opening_angle / 2) );
+            QVector2D rel_end = start - end + rel_start;
+            float radius = rel_start.length();
+            start1 = start - rel_start * 0.5 * start_width / radius;
+            start2 = start + rel_start * 0.5 * start_width / radius;
+            end1 = end - rel_end * 0.5 * end_width / radius;
+            end2 = end + rel_end * 0.5 * end_width / radius;
+        } else if (ortholine_l) {
+            start1 = start - ortholine * 0.5 * start_width / ortholine_l;
+            start2 = start + ortholine * 0.5 * start_width / ortholine_l;
+            end1 = end - ortholine * 0.5 * end_width / ortholine_l;
+            end2 = end + ortholine * 0.5 * end_width / ortholine_l;
+        } else {
+            start1 = start;
+            start2 = start;
+            end1 = end;
+            end2 = end;
+        }
+        if (start_bulge) {
+            double opening_angle = qAtan(start_bulge) * 4;
+            QString mode = start_bulge > 0 ? "G03" : "G02";
+            QString inv_mode = start_bulge > 0 ? "G02" : "G03";
+            objects.append(QVariantMap{
+                               { "layer", layer },
+                               { "command", "G75*" }
+                           });
+            if (contours) {
+                auto ortho1 = perpendicular(end1 - start1);
+                auto ortho2 = perpendicular(end2 - start2);
+                auto cycle1 = -(end1 - start1) / 2 - ortho1 / ( 2 * qTan(opening_angle / 2) );
+                auto cycle2 = (end2 - start2) / 2 - ortho2 / ( 2 * qTan(opening_angle / 2) );
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "command", "G36*" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "mode", "G01" },
+                                   { "x", start1.x() },
+                                   { "y", start1.y() },
+                                   { "style", "D02" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "mode", "G01" },
+                                   { "x", start2.x() },
+                                   { "y", start2.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "mode", mode },
+                                   { "x", end2.x() },
+                                   { "y", end2.y() },
+                                   { "i", cycle2.x() },
+                                   { "j", cycle2.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "mode", "G01" },
+                                   { "x", end1.x() },
+                                   { "y", end1.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "mode", inv_mode },
+                                   { "x", start1.x() },
+                                   { "y", start1.y() },
+                                   { "i", cycle1.x() },
+                                   { "j", cycle1.y() },
+                                   { "style", "D01" }
+                               });
+            } else {
+                auto rel = - (start - end) / 2 - ortholine / ( 2 * qTan(opening_angle / 2) );
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", device },
+                                   { "mode", "G01" },
+                                   { "x", start.x() },
+                                   { "y", start.y() },
+                                   { "style", "D02" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", device },
+                                   { "mode", mode },
+                                   { "x", end.x() },
+                                   { "y", end.y() },
+                                   { "i", rel.x() },
+                                   { "j", rel.y() },
+                                   { "style", "D01" }
+                               });
+            }
+            objects.append(QVariantMap{
+                               { "layer", layer },
+                               { "command", "G01*" }
+                           });
+        } else if (ortholine_l > 0) {
+            if (contours) {
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "command", "G36*" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "x", start1.x() },
+                                   { "y", start1.y() },
+                                   { "style", "D02" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "x", start2.x() },
+                                   { "y", start2.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "x", end2.x() },
+                                   { "y", end2.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "x", end1.x() },
+                                   { "y", end1.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", "C,0.001*" },
+                                   { "x", start1.x() },
+                                   { "y", start1.y() },
+                                   { "style", "D01" }
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "command", "G37*" }
+                               });
+            } else {
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", device },
+                                   { "x", start.x() },
+                                   { "y", start.y() },
+                                   { "style", "D02" },
+                               });
+                objects.append(QVariantMap{
+                                   { "layer", layer },
+                                   { "device", device },
+                                   { "x", end.x() },
+                                   { "y", end.y() },
+                                   { "style", "D01" },
+                               });
+            }
+        }
+    }
+
+    // try really closed poly and remove doubled lines
+    if (AUTOFILL && closed) {
+        for (QVariantList::iterator it = objects.begin(); it != objects.end(); ) {
+            QString command = it->toMap().value("command").toString();
+            if (command == "G36*" || command == "G37*") {
+                it = objects.erase(it);
+            } else {
+                it++;
+            }
+        }
+        bool first = true;
+        for (auto & o : objects) {
+            QVariantMap oMap = o.toMap();
+            if (oMap.contains("style")) {
+                oMap.insert("style", first ? "D02" : "D01");
+                first = false;
+            }
+            o = oMap;
+        }
+        objects.prepend(QVariantMap{
+                            { "layer", layer },
+                            { "command", "G36*" }
+                        });
+        objects.append(QVariantMap{
+                           { "layer", layer },
+                           { "command", "G37*" }
+                       });
+    }
+
+    if (!this->current_block.isEmpty()) {
+        this->current_block_objects.append(objects);
+    } else {
+        process(objects, true);
     }
 }

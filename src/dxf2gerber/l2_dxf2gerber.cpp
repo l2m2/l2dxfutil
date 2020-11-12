@@ -18,6 +18,11 @@ bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QStr
     QScopedPointer<L2_DxfAdapter> adapter(new L2_DxfAdapter());
     bool ok = dxf->in(dxfPath.toStdString(), adapter.data());
     if (ok) {
+        QMap<QString, QVariantList> layers = adapter->getLayers();
+        if (layers.isEmpty()) {
+            *err = QString("no layer.");
+            return false;
+        }
         QDir dir(gerberDir);
         if (!dir.exists()) {
             if (!dir.mkpath(gerberDir)) {
@@ -25,7 +30,6 @@ bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QStr
                 return false;
             }
         }
-        QMap<QString, QVariantList> layers = adapter->getLayers();
         QMap<QString, QVariantList>::const_iterator it;
         for (it = layers.constBegin(); it != layers.constEnd(); it++) {
             QString filename = gerberDir + QDir::separator() + it.key() + ".gbr";

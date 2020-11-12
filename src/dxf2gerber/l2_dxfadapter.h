@@ -75,8 +75,11 @@ protected:
     void addXDataString(int, const std::string&) override;
     void addXDataReal(int, double) override;
     void addXDataInt(int, int) override;
+
+    void endEntity() override;
 private:
     void process(const QVariantList &objects, bool append);
+    void analyzePolyline();
 private:
     QMap<QString, QVariantList> layers;
     QMap<QString, QVariantList> blocks;
