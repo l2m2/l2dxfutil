@@ -1,6 +1,7 @@
 #include "l2_dxf2gerber.h"
-#include <QFile>
+#include <QDebug>
 #include <QDir>
+#include <QFile>
 #include <QTextStream>
 #include <QScopedPointer>
 #include <QUuid>
@@ -71,16 +72,16 @@ bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QStr
                         line.append(objMap.value("mode").toString());
                     }
                     if (objMap.contains("x")) {
-                        line.append(QString("X%1").arg(static_cast<int>(objMap.value("x").toDouble() * 1000000)));
+                        line.append(QString("X%1").arg(qRound(objMap.value("x").toDouble() * 1000000)));
                     }
                     if (objMap.contains("y")) {
-                        line.append(QString("Y%1").arg(static_cast<int>(objMap.value("y").toDouble() * 1000000)));
+                        line.append(QString("Y%1").arg(qRound(objMap.value("y").toDouble() * 1000000)));
                     }
                     if (objMap.contains("i")) {
-                        line.append(QString("I%1").arg(static_cast<int>(objMap.value("i").toDouble() * 1000000)));
+                        line.append(QString("I%1").arg(qRound(objMap.value("i").toDouble() * 1000000)));
                     }
                     if (objMap.contains("j")) {
-                        line.append(QString("J%1").arg(static_cast<int>(objMap.value("j").toDouble() * 1000000)));
+                        line.append(QString("J%1").arg(qRound(objMap.value("j").toDouble() * 1000000)));
                     }
                     if (objMap.contains("style")) {
                         line.append(objMap.value("style").toString());

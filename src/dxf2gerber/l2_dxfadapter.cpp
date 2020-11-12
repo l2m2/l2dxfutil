@@ -224,6 +224,7 @@ void L2_DxfAdapter::addEllipse(const DL_EllipseData &data)
 void L2_DxfAdapter::addPolyline(const DL_PolylineData &data)
 {
     PRINT_FUNC;
+    this->current_polyline_vertexs.clear();
     this->current_polyline = data;
 }
 
@@ -459,9 +460,6 @@ void L2_DxfAdapter::addVertex(const DL_VertexData &data)
         } else {
             process(objects, true);
         }
-
-        // clear
-        this->current_polyline_vertexs.clear();
     }
 }
 
