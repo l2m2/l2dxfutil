@@ -11,10 +11,6 @@ public:
      * \brief 将DXF转换到目录下，Gerber的文件名是对应Layer的名称
      */
     static bool toDir(const QString &dxfPath, const QString &gerberDir, QString *err);
-    /*!
-     * \brief 将DXF转换成QString
-     */
-    static bool toString(const QString &dxfPath, QString *gerberStr, QString *err);
 };
 
 #endif // L2_DXF2GERBER_H

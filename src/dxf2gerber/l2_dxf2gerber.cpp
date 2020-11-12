@@ -100,25 +100,3 @@ bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QStr
     }
     return ok;
 }
-
-bool L2_Dxf2Gerber::toString(const QString &dxfPath, QString *gerberStr, QString *err)
-{
-    QString gerberDir =  QDir::tempPath() + QDir::separator() + QUuid::createUuid().toString();
-    bool ok = toDir(dxfPath, gerberDir, err);
-    if (ok) {
-        QDir dir(gerberDir);
-        auto fileinfos = dir.entryInfoList(QStringList{ "*.gbr" }, QDir::Files);
-        if (fileinfos.isEmpty()) {
-            ok = false;
-        } else {
-            auto gbrFilePath = fileinfos.first().absoluteFilePath();
-            QFile file(gbrFilePath);
-            if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                *gerberStr = file.readAll();
-            }
-            file.close();
-        }
-        dir.removeRecursively();
-    }
-    return ok;
-}
