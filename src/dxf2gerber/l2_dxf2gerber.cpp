@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QTextStream>
+#include <QTextCodec>
 #include <QScopedPointer>
 #include <QUuid>
 #include "../dxflib/dl_dxf.h"
@@ -16,7 +17,7 @@ bool L2_Dxf2Gerber::toDir(const QString &dxfPath, const QString &gerberDir, QStr
     }
     QScopedPointer<DL_Dxf> dxf(new DL_Dxf());
     QScopedPointer<L2_DxfAdapter> adapter(new L2_DxfAdapter());
-    bool ok = dxf->in(dxfPath.toStdString(), adapter.data());
+    bool ok = dxf->in(std::string(dxfPath.toLocal8Bit()), adapter.data());
     if (ok) {
         QMap<QString, QVariantList> layers = adapter->getLayers();
         if (layers.isEmpty()) {
